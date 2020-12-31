@@ -4,9 +4,6 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Environment;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.util.ArrayMap;
 import android.text.TextUtils;
 import android.util.SparseArray;
 import android.util.SparseIntArray;
@@ -14,6 +11,9 @@ import android.util.SparseIntArray;
 import java.io.File;
 import java.util.Comparator;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.collection.ArrayMap;
 import dev.dworks.apps.anexplorer.R;
 import dev.dworks.apps.anexplorer.model.DocumentsContract;
 
@@ -185,7 +185,7 @@ public class VolumeInfo {
 
     public @Nullable String getDescription() {
         if (ID_PRIVATE_INTERNAL.equals(id) || ID_EMULATED_INTERNAL.equals(id)) {
-            return Resources.getSystem().getString(R.string.storage_internal);
+            return "Internal storage";
         } else if (!TextUtils.isEmpty(fsLabel)) {
             return fsLabel;
         } else {
@@ -213,22 +213,7 @@ public class VolumeInfo {
         return (mountFlags & MOUNT_FLAG_VISIBLE) != 0;
     }
 
-    public boolean isVisibleForRead(int userId) {
-        if (type == TYPE_PUBLIC) {
-            if (isPrimary() && mountUserId != userId) {
-                // Primary physical is only visible to single user
-                return false;
-            } else {
-                return isVisible();
-            }
-        } else if (type == TYPE_EMULATED) {
-            return isVisible();
-        } else {
-            return false;
-        }
-    }
-
-    public boolean isVisibleForWrite(int userId) {
+    public boolean isVisibleForUser(int userId) {
         if (type == TYPE_PUBLIC && mountUserId == userId) {
             return isVisible();
         } else if (type == TYPE_EMULATED) {
@@ -236,6 +221,14 @@ public class VolumeInfo {
         } else {
             return false;
         }
+    }
+
+    public boolean isVisibleForRead(int userId) {
+        return isVisibleForUser(userId);
+    }
+
+    public boolean isVisibleForWrite(int userId) {
+        return isVisibleForUser(userId);
     }
 
     public File getPath() {
@@ -262,7 +255,9 @@ public class VolumeInfo {
      * Path which is accessible to apps holding
      */
     public File getInternalPathForUser(int userId) {
-        if (type == TYPE_PUBLIC) {
+        if (path == null) {
+            return null;
+        } else if (type == TYPE_PUBLIC) {
             // TODO: plumb through cleaner path from vold
             return new File(path.replace("/storage/", "/mnt/media_rw/"));
         } else {

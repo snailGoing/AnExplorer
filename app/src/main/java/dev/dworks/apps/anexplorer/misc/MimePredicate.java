@@ -16,8 +16,10 @@
 
 package dev.dworks.apps.anexplorer.misc;
 
-import com.android.internal.util.Predicate;
 
+import android.text.TextUtils;
+
+import dev.dworks.apps.anexplorer.libcore.util.Predicate;
 import dev.dworks.apps.anexplorer.model.DocumentInfo;
 import dev.dworks.apps.anexplorer.model.DocumentsContract;
 import dev.dworks.apps.anexplorer.model.DocumentsContract.Document;
@@ -34,6 +36,11 @@ public class MimePredicate implements Predicate<DocumentInfo> {
     	"video/*",
     	"audio/*",
     	Document.MIME_TYPE_APK};
+
+    public static final String[] MEDIA_MIMES = new String[] {
+            "image/*",
+            "video/*",
+            "audio/*"};
 
     public static final String[] SPECIAL_MIMES = new String[] { 
     	"application/zip",
@@ -92,6 +99,11 @@ public class MimePredicate implements Predicate<DocumentInfo> {
         if (filters == null) {
             return true;
         }
+
+        if( TextUtils.isEmpty(test)){
+            return false;
+        }
+
         for (String filter : filters) {
             if (mimeMatches(filter, test)) {
                 return true;

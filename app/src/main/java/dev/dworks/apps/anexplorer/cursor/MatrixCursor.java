@@ -16,12 +16,13 @@ package dev.dworks.apps.anexplorer.cursor;
  * limitations under the License.
  */
 
+import android.database.AbstractCursor;
+import android.database.CursorIndexOutOfBoundsException;
+import android.os.Bundle;
+
 import java.util.ArrayList;
 
 import dev.dworks.apps.anexplorer.misc.DataBaseUtils;
-
-import android.database.AbstractCursor;
-import android.database.CursorIndexOutOfBoundsException;
 
 /**
  * A mutable cursor implementation backed by an array of {@code Object}s. Use
@@ -34,6 +35,7 @@ public class MatrixCursor extends AbstractCursor {
     private Object[] data;
     private int rowCount = 0;
     private final int columnCount;
+    private Bundle mExtras = Bundle.EMPTY;
 
     /**
      * Constructs a new cursor with the given initial capacity.
@@ -315,5 +317,16 @@ public class MatrixCursor extends AbstractCursor {
     @Override
     public boolean isNull(int column) {
         return get(column) == null;
+    }
+
+    @Override
+    public Bundle getExtras() {
+        return mExtras;
+    }
+
+    @Override
+    public Bundle respond(Bundle extras) {
+        mExtras = (extras == null) ? Bundle.EMPTY : extras;
+        return mExtras;
     }
 }

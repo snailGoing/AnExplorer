@@ -43,6 +43,9 @@ import dev.dworks.apps.anexplorer.model.DocumentsContract;
 import dev.dworks.apps.anexplorer.model.DocumentsContract.Document;
 import dev.dworks.apps.anexplorer.model.DocumentsContract.Root;
 
+import static dev.dworks.apps.anexplorer.DocumentsApplication.isTelevision;
+import static dev.dworks.apps.anexplorer.DocumentsApplication.isWatch;
+
 
 /**
  * Presents a {@link DocumentsContract} view of {MediaProvider} external
@@ -62,7 +65,7 @@ public class NonMediaDocumentsProvider extends StorageProvider {
 
     private static final String[] DEFAULT_DOCUMENT_PROJECTION = new String[] {
             Document.COLUMN_DOCUMENT_ID, Document.COLUMN_MIME_TYPE, Document.COLUMN_PATH, Document.COLUMN_DISPLAY_NAME,
-            Document.COLUMN_LAST_MODIFIED, Document.COLUMN_FLAGS, Document.COLUMN_SIZE,
+            Document.COLUMN_LAST_MODIFIED, Document.COLUMN_FLAGS, Document.COLUMN_SIZE, Document.COLUMN_SUMMARY,
     };
 
     private static final String[] DOCUMENT_MIMES =
@@ -195,7 +198,9 @@ public class NonMediaDocumentsProvider extends StorageProvider {
     @Override
     public Cursor queryRoots(String[] projection) throws FileNotFoundException {
         final MatrixCursor result = new MatrixCursor(resolveRootProjection(projection));
-        includeFileRoot(result, TYPE_DOCUMENT_ROOT, R.string.root_document, DOCUMENT_MIME_TYPES, true);
+        if(!isTelevision()){
+            includeFileRoot(result, TYPE_DOCUMENT_ROOT, R.string.root_document, DOCUMENT_MIME_TYPES, true);
+        }
         includeFileRoot(result, TYPE_ARCHIVE_ROOT, R.string.root_archive, ARCHIVE_MIME_TYPES, false);
         includeFileRoot(result, TYPE_APK_ROOT, R.string.root_apk, APK_MIME_TYPES, false);
 
@@ -464,8 +469,11 @@ public class NonMediaDocumentsProvider extends StorageProvider {
         final RowBuilder row = result.newRow();
         row.add(Document.COLUMN_DOCUMENT_ID, root_type);
         row.add(Document.COLUMN_DISPLAY_NAME, getContext().getString(name_id));
-        row.add(Document.COLUMN_FLAGS,
-                Document.FLAG_DIR_PREFERS_GRID | Document.FLAG_DIR_PREFERS_LAST_MODIFIED | Document.FLAG_SUPPORTS_DELETE);
+        int flags = Document.FLAG_DIR_PREFERS_LAST_MODIFIED | Document.FLAG_SUPPORTS_DELETE;
+        if(!isWatch()) {
+            flags |= Document.FLAG_DIR_PREFERS_GRID;
+        }
+        row.add(Document.COLUMN_FLAGS, flags);
         row.add(Document.COLUMN_MIME_TYPE, Document.MIME_TYPE_DIR);
     }
 

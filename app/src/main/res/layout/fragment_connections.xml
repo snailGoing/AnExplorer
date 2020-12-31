@@ -53,12 +53,16 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <ListView
-            android:id="@+id/list"
+        <dev.dworks.apps.anexplorer.ui.RecyclerViewPlus
+            android:id="@id/recyclerview"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:scrollbarStyle="outsideOverlay" />
+            android:drawSelectorOnTop="true"
+            android:horizontalSpacing="@dimen/grid_item_padding"
+            android:scrollbars="vertical"
+            app:gridColumnWidth="@dimen/grid_item_width"
+            app:type="list" />
 
         <include layout="@layout/fab_layout_connections" />
 
@@ -70,8 +74,7 @@
             android:layout_gravity="center"
             android:gravity="center"
             android:text="No connections yet!"
-            android:visibility="gone"
-            app:drawableTop="@drawable/ic_empty_file" />
+            android:visibility="gone" />
     </FrameLayout>
 
 </dev.dworks.apps.anexplorer.ui.DirectoryView>

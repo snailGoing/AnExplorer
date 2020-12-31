@@ -1,37 +1,51 @@
 package dev.dworks.apps.anexplorer.fragment;
 
-import android.app.Fragment;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.loader.app.LoaderManager;
+
+import dev.dworks.apps.anexplorer.BuildConfig;
 import dev.dworks.apps.anexplorer.R;
+import dev.dworks.apps.anexplorer.ShareDeviceActivity;
+import dev.dworks.apps.anexplorer.common.BaseFragment;
 import dev.dworks.apps.anexplorer.misc.ConnectionUtils;
 import dev.dworks.apps.anexplorer.misc.IconUtils;
+import dev.dworks.apps.anexplorer.misc.RootsCache;
 import dev.dworks.apps.anexplorer.model.RootInfo;
 import dev.dworks.apps.anexplorer.network.NetworkConnection;
+import dev.dworks.apps.anexplorer.provider.CloudStorageProvider;
+import dev.dworks.apps.anexplorer.provider.NetworkStorageProvider;
+import dev.dworks.apps.anexplorer.setting.SettingsActivity;
 
 import static dev.dworks.apps.anexplorer.misc.ConnectionUtils.ACTION_FTPSERVER_FAILEDTOSTART;
 import static dev.dworks.apps.anexplorer.misc.ConnectionUtils.ACTION_FTPSERVER_STARTED;
 import static dev.dworks.apps.anexplorer.misc.ConnectionUtils.ACTION_FTPSERVER_STOPPED;
 import static dev.dworks.apps.anexplorer.misc.ConnectionUtils.ACTION_START_FTPSERVER;
 import static dev.dworks.apps.anexplorer.misc.ConnectionUtils.ACTION_STOP_FTPSERVER;
+import static dev.dworks.apps.anexplorer.misc.ConnectionUtils.editConnection;
 import static dev.dworks.apps.anexplorer.misc.Utils.EXTRA_ROOT;
 
-public class ServerFragment extends Fragment implements View.OnClickListener {
+public class ServerFragment extends BaseFragment implements View.OnClickListener {
+
+    public static final String TAG = "ServerFragment";
 
     private TextView status;
     private TextView username;
@@ -41,6 +55,7 @@ public class ServerFragment extends Fragment implements View.OnClickListener {
     private Button action;
     private TextView warning;
     private RootInfo root;
+    private int connection_id;
 
     public static void show(FragmentManager fm, RootInfo root) {
         final ServerFragment fragment = new ServerFragment();
@@ -48,14 +63,18 @@ public class ServerFragment extends Fragment implements View.OnClickListener {
         args.putParcelable(EXTRA_ROOT, root);
         fragment.setArguments(args);
         final FragmentTransaction ft = fm.beginTransaction();
-        ft.replace(R.id.container_directory, fragment);
+        ft.replace(R.id.container_directory, fragment, TAG);
         ft.commitAllowingStateLoss();
+    }
+
+    public static ServerFragment get(FragmentManager fm) {
+        return (ServerFragment) fm.findFragmentByTag(TAG);
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setHasOptionsMenu(false);
+        setHasOptionsMenu(true);
     }
 
     @Override
@@ -71,10 +90,11 @@ public class ServerFragment extends Fragment implements View.OnClickListener {
         password =(TextView) view.findViewById(R.id.password);
         path = (TextView) view.findViewById(R.id.path);
         address = (TextView) view.findViewById(R.id.address);
+        address.setTextColor(SettingsActivity.getAccentColor());
+        address.setHighlightColor(SettingsActivity.getPrimaryColor());
         warning = (TextView) view.findViewById(R.id.warning);
         action = (Button) view.findViewById(R.id.action);
         action.setOnClickListener(this);
-
     }
 
     @Override
@@ -82,8 +102,15 @@ public class ServerFragment extends Fragment implements View.OnClickListener {
         super.onActivityCreated(savedInstanceState);
         setRetainInstance(true);
         root = getArguments().getParcelable(EXTRA_ROOT);
-
         NetworkConnection connection = NetworkConnection.fromRootInfo(getActivity(), root);
+        connection_id = connection.id;
+        showData(connection);
+    }
+
+    private void showData(NetworkConnection connection) {
+        if (null == connection){
+            return;
+        }
         path.setText(connection.getPath());
         username.setText(connection.getUserName());
         password.setText(connection.getPassword());
@@ -116,14 +143,43 @@ public class ServerFragment extends Fragment implements View.OnClickListener {
         super.onDestroy();
     }
 
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        inflater.inflate(R.menu.menu_server, menu);
+        super.onCreateOptionsMenu(menu, inflater);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()){
+            case R.id.action_edit_server:
+                editConnection(getAppCompatActivity(), connection_id);
+                break;
+            case R.id.action_transfer_help:
+                showHelp();
+                break;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    public void reload(){
+        NetworkConnection networkConnection =
+                NetworkConnection.fromConnectionId(getActivity(), connection_id);
+        RootsCache.updateRoots(getActivity(), NetworkStorageProvider.AUTHORITY);
+        RootsCache.updateRoots(getActivity(), CloudStorageProvider.AUTHORITY);
+        showData(networkConnection);
+    }
+
     private void startServer() {
         Intent intent = new Intent(ACTION_START_FTPSERVER);
+        intent.setPackage(BuildConfig.APPLICATION_ID);
         intent.putExtras(getArguments());
         getActivity().sendBroadcast(intent);
     }
 
     private void stopServer() {
         Intent intent = new Intent(ACTION_STOP_FTPSERVER);
+        intent.setPackage(BuildConfig.APPLICATION_ID);
         intent.putExtras(getArguments());
         getActivity().sendBroadcast(intent);
     }
@@ -149,10 +205,10 @@ public class ServerFragment extends Fragment implements View.OnClickListener {
         switch (view.getId()){
             case R.id.action:
                 if(!ConnectionUtils.isServerRunning(getActivity())){
-                    if(ConnectionUtils.isConnectedToWifi(getActivity()))
+                    if(ConnectionUtils.isConnectedToLocalNetwork(getActivity()))
                         startServer();
                     else
-                        setText(warning, getString(R.string.ftp_no_wifi));
+                        setText(warning, getString(R.string.local_no_connection));
                 }
                 else{
                     stopServer();
@@ -165,16 +221,14 @@ public class ServerFragment extends Fragment implements View.OnClickListener {
 
         @Override
         public void onReceive(Context context, Intent intent) {
-            ConnectivityManager conMan = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo netInfo = conMan.getActiveNetworkInfo();
-            if (netInfo != null && netInfo.getType() == ConnectivityManager.TYPE_WIFI){
+            if (ConnectionUtils.isConnectedToLocalNetwork(context)){
                 setText(warning, "");
             }
             else{
                 stopServer();
                 setStatus(false);
                 setText(address, "");
-                setText(warning, getString(R.string.ftp_no_wifi));
+                setText(warning, getString(R.string.local_no_connection));
             }
         }
     };
@@ -204,5 +258,14 @@ public class ServerFragment extends Fragment implements View.OnClickListener {
     private void setText(TextView textView, String text){
         textView.setText(text);
         textView.setVisibility(TextUtils.isEmpty(text) ? View.GONE : View.VISIBLE);
+    }
+
+    public void showHelp(){
+        new AlertDialog.Builder(getActivity(),
+                R.style.AlertDialogStyle)
+                .setTitle("How to use Transfer to PC")
+                .setMessage(R.string.ftp_server_help_description)
+                .setPositiveButton("Got it!", null)
+                .show();
     }
 }

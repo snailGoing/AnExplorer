@@ -1,7 +1,8 @@
 package dev.dworks.apps.anexplorer.misc;
 
+import android.system.Os;
+
 import java.io.FileDescriptor;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /** Very hackish */
@@ -62,13 +63,14 @@ public final class OsCompat {
         }
     }
 
-    public static int lseek(FileDescriptor fd, long offset, int whence) throws
+    public static Long lseek(FileDescriptor fd, long offset, int whence) throws
             ExecutionFailedException {
         try {
-            return (Integer) sLseek.invoke(sOs, fd, offset, whence);
-        } catch (IllegalAccessException e) {
-            throw new ExecutionFailedException(e);
-        } catch (InvocationTargetException e) {
+            if(Utils.hasMarshmallow()){
+                return Os.lseek(fd, offset, whence);
+            }
+            return (Long) sLseek.invoke(sOs, fd, offset, whence);
+        } catch (Exception e) {
             throw new ExecutionFailedException(e);
         }
     }

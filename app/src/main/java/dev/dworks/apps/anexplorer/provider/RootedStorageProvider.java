@@ -25,17 +25,17 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.CancellationSignal;
 import android.os.ParcelFileDescriptor;
-import android.support.v4.util.ArrayMap;
 import android.text.TextUtils;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Map;
-import java.util.Scanner;
 
+import androidx.annotation.GuardedBy;
+import androidx.collection.ArrayMap;
 import dev.dworks.apps.anexplorer.BuildConfig;
 import dev.dworks.apps.anexplorer.R;
 import dev.dworks.apps.anexplorer.cursor.MatrixCursor;
@@ -47,7 +47,6 @@ import dev.dworks.apps.anexplorer.misc.ParcelFileDescriptorUtil;
 import dev.dworks.apps.anexplorer.model.DocumentsContract;
 import dev.dworks.apps.anexplorer.model.DocumentsContract.Document;
 import dev.dworks.apps.anexplorer.model.DocumentsContract.Root;
-import android.support.annotation.GuardedBy;
 import dev.dworks.apps.anexplorer.root.RootCommands;
 import dev.dworks.apps.anexplorer.root.RootFile;
 
@@ -371,19 +370,9 @@ public class RootedStorageProvider extends StorageProvider {
         final MatrixCursor result = new DirectoryCursor(
                 resolveDocumentProjection(projection), parentDocumentId, parent);
         try {
-            BufferedReader br = RootCommands.listFiles(parent.getPath());
-            if (null != br){
-            	Scanner scanner = new Scanner(br);
-            	while (scanner.hasNextLine()) {
-            	  String line = scanner.nextLine();
-            	  try {
-            		  includeRootFile(result, null, new RootFile(parent, line));
-            	  } catch (Exception e) {
-            		  e.printStackTrace();
-            	  }
-
-            	}
-            	scanner.close();
+            ArrayList<String> listFiles = RootCommands.listFiles(parent.getPath());
+            for (String line : listFiles){
+                includeRootFile(result, null, new RootFile(parent, line));
             }
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -403,20 +392,11 @@ public class RootedStorageProvider extends StorageProvider {
         }
 
         try {
-            BufferedReader br = RootCommands.findFiles(parent.getPath(), query);
-            if (null != br){
-                Scanner scanner = new Scanner(br);
-                while (scanner.hasNextLine()) {
-                    String line = scanner.nextLine();
-                    try {
-                        includeRootFile(result, null, new RootFile(parent, line));
-                    } catch (Exception e) {
-                        CrashReportingManager.logException(e);
-                    }
-
-                }
-                scanner.close();
+            ArrayList<String> listFiles = RootCommands.findFiles(parent.getPath(), query);
+            for (String line : listFiles){
+                includeRootFile(result, null, new RootFile(parent, line));
             }
+
         } catch (Exception e) {
             CrashReportingManager.logException(e);
         }
@@ -462,13 +442,13 @@ public class RootedStorageProvider extends StorageProvider {
 
         final long token = Binder.clearCallingIdentity();
         try {
-            if ("audio".equals(typeOnly)) {
+            if (MediaDocumentsProvider.TYPE_AUDIO.equals(typeOnly)) {
                 final long id = getAlbumForPathCleared(file.getPath());
                 return openOrCreateAudioThumbnailCleared(id, signal);
-            } else if ("image".equals(typeOnly)) {
+            } else if (MediaDocumentsProvider.TYPE_IMAGE.equals(typeOnly)) {
                 final long id = getImageForPathCleared(file.getPath());
                 return openOrCreateImageThumbnailCleared(id, signal);
-            } else if ("video".equals(typeOnly)) {
+            } else if (MediaDocumentsProvider.TYPE_VIDEO.equals(typeOnly)) {
                 final long id = getVideoForPathCleared(file.getPath());
                 return openOrCreateVideoThumbnailCleared(id, signal);
             } else {

@@ -6,7 +6,6 @@ import android.net.Uri;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.provider.BaseColumns;
-import android.support.annotation.NonNull;
 import android.util.Log;
 
 import java.io.DataInputStream;
@@ -14,6 +13,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
+import androidx.annotation.NonNull;
 import dev.dworks.apps.anexplorer.libcore.io.IoUtils;
 import dev.dworks.apps.anexplorer.misc.CrashReportingManager;
 import dev.dworks.apps.anexplorer.misc.LogUtils;
@@ -39,6 +39,7 @@ public class NetworkConnection  implements Durable, Parcelable {
     public static final String SERVER = "server";
     public static final String CLIENT = "client";
 
+    public int id;
     public String name;
     public String scheme;
     public String type;
@@ -263,6 +264,7 @@ public class NetworkConnection  implements Durable, Parcelable {
 
         NetworkConnection networkConnection
                 = NetworkConnection.create(scheme, host, port, username, password);
+        networkConnection.id = getCursorInt(cursor, BaseColumns._ID);
         networkConnection.name = getCursorString(cursor, ConnectionColumns.NAME);
         networkConnection.type = getCursorString(cursor, ConnectionColumns.TYPE);
         networkConnection.path = getCursorString(cursor, ConnectionColumns.PATH);
@@ -272,7 +274,7 @@ public class NetworkConnection  implements Durable, Parcelable {
 
     public static NetworkConnection fromRootInfo(Context context, RootInfo root) {
         Cursor cursor = null;
-        NetworkConnection networkConnection = null;
+        NetworkConnection networkConnection = new NetworkConnection();;
         try {
             cursor = context.getContentResolver()
                     .query(ExplorerProvider.buildConnection(), null,
@@ -295,6 +297,10 @@ public class NetworkConnection  implements Durable, Parcelable {
     public static NetworkConnection fromConnectionId(Context context, int id) {
         Cursor cursor = null;
         NetworkConnection networkConnection = null;
+        if(id == 0) {
+            networkConnection = new NetworkConnection();
+            return networkConnection;
+        }
         try {
             cursor = context.getContentResolver()
                     .query(ExplorerProvider.buildConnection(), null,

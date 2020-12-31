@@ -2,8 +2,6 @@ package dev.dworks.apps.anexplorer.ui;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
-import android.support.annotation.ColorRes;
-import android.support.annotation.NonNull;
 import android.util.AttributeSet;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -11,8 +9,10 @@ import android.view.animation.AccelerateDecelerateInterpolator;
 import android.view.animation.Interpolator;
 import android.widget.AbsListView;
 
+import androidx.annotation.ColorRes;
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 import dev.dworks.apps.anexplorer.R;
-import dev.dworks.apps.anexplorer.misc.Utils;
 import dev.dworks.apps.anexplorer.ui.fabs.FabSpeedDial;
 
 
@@ -124,6 +124,11 @@ public class FloatingActionsMenu extends FabSpeedDial {
         return marginBottom;
     }
 
+    public void attachToListView(@NonNull RecyclerView listView) {
+        RecyclerViewScrollDetectorImpl scrollDetector = new RecyclerViewScrollDetectorImpl();
+        listView.setOnScrollListener(scrollDetector);
+    }
+
     public void attachToListView(@NonNull AbsListView listView) {
         attachToListView(listView, null);
     }
@@ -157,6 +162,35 @@ public class FloatingActionsMenu extends FabSpeedDial {
             if (mListener != null) {
                 mListener.onScrollUp();
             }
+        }
+    }
+
+    private class RecyclerViewScrollDetectorImpl extends RecyclerView.OnScrollListener {
+        private ScrollDirectionListener mListener;
+
+        private void setListener(ScrollDirectionListener scrollDirectionListener) {
+            mListener = scrollDirectionListener;
+        }
+
+        @Override
+        public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+            if(dy > 0){
+                hide();
+            } else{
+                show();
+            }
+
+            super.onScrolled(recyclerView, dx, dy);
+        }
+
+        @Override
+        public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+            switch (newState) {
+                case RecyclerView.SCROLL_STATE_IDLE:
+                    show();
+                    break;
+            }
+            super.onScrollStateChanged(recyclerView, newState);
         }
     }
 }

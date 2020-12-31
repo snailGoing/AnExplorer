@@ -9,9 +9,9 @@ import android.graphics.Rect;
 import android.media.ThumbnailUtils;
 import android.net.Uri;
 import android.provider.MediaStore;
-import android.support.media.ExifInterface;
 import android.util.Base64;
 import android.util.Log;
+import android.webkit.URLUtil;
 import android.widget.ImageView;
 
 import java.io.ByteArrayInputStream;
@@ -19,7 +19,10 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.regex.Pattern;
+
+import androidx.exifinterface.media.ExifInterface;
 
 
 public class ImageUtils {
@@ -313,16 +316,21 @@ public class ImageUtils {
     public static Bitmap decodeStream(final ContentResolver resolver, final Uri uri,
                                       BitmapFactory.Options opts) {
         Bitmap result = null;
-        final InputStreamFactory factory = createInputStreamFactory(resolver, uri);
+
         try {
-            result = decodeStream(factory, null, opts);
+            String imageUrl = uri.toString();
+            if(URLUtil.isNetworkUrl(imageUrl)){
+                URL url = new URL(imageUrl);
+                result = decodeStream(url.openConnection().getInputStream(), null, opts);
+            } else {
+                final InputStreamFactory factory = createInputStreamFactory(resolver, uri);
+                result = decodeStream(factory, null, opts);
+            }
             return result;
 
-        } catch (FileNotFoundException exception) {
+        } catch (IllegalArgumentException | SecurityException | IOException exception) {
             // Do nothing - the photo will appear to be missing
-        } catch (IllegalArgumentException exception) {
-            // Do nothing - the photo will appear to be missing
-        } catch (SecurityException exception) {
+            exception.printStackTrace();
         }
         return result;
     }

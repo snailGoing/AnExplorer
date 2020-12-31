@@ -17,18 +17,13 @@
 
 package dev.dworks.apps.anexplorer.fragment;
 
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
-import android.app.LoaderManager.LoaderCallbacks;
 import android.content.ContentResolver;
 import android.content.Context;
-import android.content.Loader;
 import android.database.Cursor;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.CancellationSignal;
-import android.support.v4.content.ContextCompat;
 import android.text.Spannable;
 import android.text.SpannableStringBuilder;
 import android.text.TextUtils.TruncateAt;
@@ -49,10 +44,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.loader.app.LoaderManager;
+import androidx.loader.app.LoaderManager.LoaderCallbacks;
+import androidx.loader.content.Loader;
 import dev.dworks.apps.anexplorer.BaseActivity;
 import dev.dworks.apps.anexplorer.BaseActivity.State;
 import dev.dworks.apps.anexplorer.DocumentsApplication;
 import dev.dworks.apps.anexplorer.R;
+import dev.dworks.apps.anexplorer.common.ListFragment;
 import dev.dworks.apps.anexplorer.libcore.io.IoUtils;
 import dev.dworks.apps.anexplorer.loader.UriDerivativeLoader;
 import dev.dworks.apps.anexplorer.misc.CrashReportingManager;
@@ -90,7 +92,7 @@ public class RecentsCreateFragment extends ListFragment {
             LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         final Context context = inflater.getContext();
 
-        final View view = inflater.inflate(R.layout.fragment_directory, container, false);
+        final View view = inflater.inflate(R.layout.fragment_recents_create, container, false);
 
         mEmptyView = view.findViewById(android.R.id.empty);
 
@@ -141,7 +143,7 @@ public class RecentsCreateFragment extends ListFragment {
 
         setListAdapter(mAdapter);
         setListShown(false);
-        getLoaderManager().restartLoader(LOADER_RECENTS, getArguments(), mCallbacks);
+        LoaderManager.getInstance(getActivity()).restartLoader(LOADER_RECENTS, getArguments(), mCallbacks);
     }
 
     private OnItemClickListener mItemListener = new OnItemClickListener() {

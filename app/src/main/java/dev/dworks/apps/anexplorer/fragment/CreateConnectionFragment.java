@@ -22,21 +22,21 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.FragmentManager;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.AppCompatCheckBox;
-import android.support.v7.widget.AppCompatEditText;
-import android.support.v7.widget.AppCompatSpinner;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 
+import androidx.annotation.Nullable;
+import androidx.appcompat.widget.AppCompatCheckBox;
+import androidx.appcompat.widget.AppCompatEditText;
+import androidx.appcompat.widget.AppCompatSpinner;
+import androidx.fragment.app.FragmentManager;
 import dev.dworks.apps.anexplorer.BaseActivity;
-import dev.dworks.apps.anexplorer.DialogFragment;
 import dev.dworks.apps.anexplorer.R;
+import dev.dworks.apps.anexplorer.common.DialogBuilder;
+import dev.dworks.apps.anexplorer.common.DialogFragment;
 import dev.dworks.apps.anexplorer.misc.AsyncTask;
 import dev.dworks.apps.anexplorer.misc.ProviderExecutor;
 import dev.dworks.apps.anexplorer.misc.RootsCache;
@@ -93,7 +93,7 @@ public class CreateConnectionFragment extends DialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         final Context context = getActivity();
 
-        final AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        final DialogBuilder builder = new DialogBuilder(context);
         final LayoutInflater dialogInflater = getActivity().getLayoutInflater();
 
         final View view = dialogInflater.inflate(R.layout.dialog_create_connection, null, false);
@@ -133,6 +133,7 @@ public class CreateConnectionFragment extends DialogFragment {
             password.setText(connection.getPassword());
             anonymous.setChecked(connection.isAnonymousLogin());
             if(SERVER.equals(connection.getType())){
+                scheme.setVisibility(View.GONE);
                 hostContainer.setVisibility(View.GONE);
                 pathContainer.setVisibility(View.VISIBLE);
             }
@@ -159,7 +160,8 @@ public class CreateConnectionFragment extends DialogFragment {
     }
 
     private NetworkConnection getNetworkConnection(){
-        NetworkConnection networkConnection = new NetworkConnection();
+        NetworkConnection networkConnection =
+                NetworkConnection.fromConnectionId(getActivity(), connection_id);
         networkConnection.name = name.getText().toString();
         networkConnection.host = host.getText().toString();
         String portNumber = port.getText().toString();
@@ -168,10 +170,14 @@ public class CreateConnectionFragment extends DialogFragment {
         }
         networkConnection.username = username.getText().toString();
         networkConnection.password = password.getText().toString();
+        networkConnection.path = path.getText().toString();
         networkConnection.scheme = scheme.getSelectedItem().toString().toLowerCase();
-        networkConnection.type = CLIENT;
+
         networkConnection.setAnonymous(anonymous.isChecked());
-        networkConnection.build();
+        if(connection_id == 0) {
+            networkConnection.type = CLIENT;
+            networkConnection.build();
+        }
         return networkConnection;
     }
 
@@ -180,7 +186,7 @@ public class CreateConnectionFragment extends DialogFragment {
         if(TextUtils.isEmpty(networkConnection.name)){
             return false;
         }
-        if(TextUtils.isEmpty(networkConnection.host)){
+        if(TextUtils.isEmpty(networkConnection.host) && !SERVER.equals(networkConnection.getType())){
             return false;
         }
         if(networkConnection.port == 0){
@@ -221,12 +227,15 @@ public class CreateConnectionFragment extends DialogFragment {
         protected void onPostExecute(Boolean result) {
             if (result) {
                 RootsCache.updateRoots(mActivity, NetworkStorageProvider.AUTHORITY);
-                ConnectionsFragment connectionsFragment = ConnectionsFragment.get(mActivity.getFragmentManager());
+                ConnectionsFragment connectionsFragment = ConnectionsFragment.get(mActivity.getSupportFragmentManager());
+                ServerFragment serverFragment = ServerFragment.get(mActivity.getSupportFragmentManager());
                 if(null != connectionsFragment){
                     connectionsFragment.reload();
                     if(connection_id == 0) {
                         connectionsFragment.openConnectionRoot(mNetworkConnection);
                     }
+                } else if(null != serverFragment){
+                    serverFragment.reload();
                 }
             }
         }

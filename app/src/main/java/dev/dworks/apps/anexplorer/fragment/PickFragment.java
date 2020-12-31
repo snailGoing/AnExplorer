@@ -16,9 +16,6 @@
 
 package dev.dworks.apps.anexplorer.fragment;
 
-import android.app.Fragment;
-import android.app.FragmentManager;
-import android.app.FragmentTransaction;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
@@ -28,14 +25,17 @@ import android.widget.Button;
 
 import java.util.Locale;
 
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
 import dev.dworks.apps.anexplorer.BaseActivity;
 import dev.dworks.apps.anexplorer.R;
+import dev.dworks.apps.anexplorer.common.BaseFragment;
 import dev.dworks.apps.anexplorer.model.DocumentInfo;
 
 /**
  * Display pick confirmation bar, usually for selecting a directory.
  */
-public class PickFragment extends Fragment {
+public class PickFragment extends BaseFragment {
     public static final String TAG = "PickFragment";
 
     private DocumentInfo mPickTarget;

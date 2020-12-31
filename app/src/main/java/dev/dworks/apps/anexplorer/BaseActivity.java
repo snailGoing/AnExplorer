@@ -16,34 +16,51 @@
 package dev.dworks.apps.anexplorer;
 
 import android.Manifest;
-import android.app.Fragment;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.design.widget.Snackbar;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.util.ArrayMap;
 import android.text.TextUtils;
 import android.util.SparseArray;
+import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
-import android.widget.AbsListView;
+
+import com.google.android.gms.cast.framework.CastContext;
+import com.google.android.gms.cast.framework.CastSession;
+import com.google.android.gms.cast.framework.media.MediaQueue;
 
 import java.util.List;
 
+import androidx.annotation.CallSuper;
+import androidx.annotation.Nullable;
+import androidx.collection.ArrayMap;
+import androidx.core.app.ActivityCompat;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.RecyclerView;
+import dev.dworks.apps.anexplorer.cast.Casty;
+import dev.dworks.apps.anexplorer.common.ActionBarActivity;
 import dev.dworks.apps.anexplorer.misc.PermissionUtil;
+import dev.dworks.apps.anexplorer.misc.RootsCache;
 import dev.dworks.apps.anexplorer.misc.Utils;
 import dev.dworks.apps.anexplorer.model.DocumentInfo;
 import dev.dworks.apps.anexplorer.model.DocumentStack;
 import dev.dworks.apps.anexplorer.model.DurableUtils;
 import dev.dworks.apps.anexplorer.model.RootInfo;
 import dev.dworks.apps.anexplorer.provider.ExternalStorageProvider;
-import dev.dworks.apps.anexplorer.setting.SettingsActivity;
+import dev.dworks.apps.anexplorer.server.WebServer;
+
+import static dev.dworks.apps.anexplorer.DocumentsApplication.isSpecialDevice;
+import static dev.dworks.apps.anexplorer.DocumentsApplication.isWatch;
+import static dev.dworks.apps.anexplorer.model.RootInfo.openRoot;
 
 public abstract class BaseActivity extends ActionBarActivity {
     public static final String TAG = "Documents";
+    private RootsCache mRoots;
 
     public abstract State getDisplayState();
     public abstract RootInfo getCurrentRoot();
@@ -69,7 +86,7 @@ public abstract class BaseActivity extends ActionBarActivity {
 
 
     public abstract boolean isShowAsDialog();
-    public abstract void upadateActionItems(AbsListView mCurrentView);
+    public abstract void upadateActionItems(RecyclerView mCurrentView);
     public abstract void setInfoDrawerOpen(boolean open);
     public abstract void again();
 
@@ -119,6 +136,7 @@ public abstract class BaseActivity extends ActionBarActivity {
         public static final int ACTION_BROWSE = 6;
         public static final int ACTION_MANAGE_ALL = 7;
 
+        public @interface ViewMode {}
         public static final int MODE_UNKNOWN = 0;
         public static final int MODE_LIST = 1;
         public static final int MODE_GRID = 2;
@@ -156,9 +174,14 @@ public abstract class BaseActivity extends ActionBarActivity {
             out.writeMap(dirState);
         }
 
-        public static final Creator<State> CREATOR = new Creator<State>() {
+        public static final ClassLoaderCreator<State> CREATOR = new ClassLoaderCreator<State>() {
             @Override
             public State createFromParcel(Parcel in) {
+                return createFromParcel(in, null);
+            }
+
+            @Override
+            public State createFromParcel(Parcel in, ClassLoader loader) {
                 final State state = new State();
                 state.action = in.readInt();
                 state.userMode = in.readInt();
@@ -178,7 +201,7 @@ public abstract class BaseActivity extends ActionBarActivity {
                 state.restored = in.readInt() != 0;
                 DurableUtils.readFromParcel(in, state.stack);
                 state.currentSearch = in.readString();
-                in.readMap(state.dirState, null);
+                in.readMap(state.dirState, loader);
                 return state;
             }
 
@@ -189,63 +212,12 @@ public abstract class BaseActivity extends ActionBarActivity {
         };
     }
 
-    public void showError(int msg){
-        showToast(msg, ContextCompat.getColor(this, R.color.button_text_color_red), Snackbar.LENGTH_SHORT);
-    }
-
-    public void showInfo(String msg){
-        showSnackBar(msg, Snackbar.LENGTH_SHORT);
-    }
-
-    public void showToast(int msg, int actionColor, int duration){
-        final Snackbar snackbar = Snackbar.make(findViewById(R.id.content_view), msg, duration);
-        snackbar.setAction(android.R.string.ok, new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                snackbar.dismiss();
-            }
-        })
-                .setActionTextColor(actionColor).show();
-    }
-
-    public void showSnackBar(String text, int duration){
-        final Snackbar snackbar = Snackbar.make(findViewById(R.id.content_view), text, duration);
-        snackbar.setAction(android.R.string.ok, new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                snackbar.dismiss();
-            }
-        });
-        snackbar.setActionTextColor(SettingsActivity.getAccentColor()).show();
-    }
-
-    public void showSnackBar(String text, int duration, String action, int actionColor){
-        final Snackbar snackbar = Snackbar.make(findViewById(R.id.content_view), text, duration);
-        snackbar.setAction(action, new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                snackbar.dismiss();
-            }
-        });
-        snackbar.setActionTextColor(actionColor).show();
-    }
-
-    public void showSnackBar(String text, int duration, String action, int actionColor, View.OnClickListener listener){
-        Snackbar.make(findViewById(R.id.content_view), text, duration).setAction(action, listener)
-                .setActionTextColor(actionColor).show();
-    }
-
-    public void showSnackBar(String text, int duration, String action, View.OnClickListener listener){
-        Snackbar.make(findViewById(R.id.content_view), text, duration).setAction(action, listener)
-                .setActionTextColor(SettingsActivity.getAccentColor()).show();
-    }
-
     public boolean isSAFIssue(String docId){
         boolean isSAFIssue = Build.VERSION.SDK_INT == Build.VERSION_CODES.KITKAT
                 && !TextUtils.isEmpty(docId) && docId.startsWith(ExternalStorageProvider.ROOT_ID_SECONDARY);
 
         if(isSAFIssue){
-            showError(R.string.saf_issue);
+            Utils.showError(this, R.string.saf_issue);
         }
         return isSAFIssue;
     }
@@ -258,7 +230,7 @@ public abstract class BaseActivity extends ActionBarActivity {
             again();
         } else {
             if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-                Utils.showRetrySnackBar(this, "Storage permissions are needed for Exploring.", new View.OnClickListener() {
+                Utils.showPermanentRetrySnackBar(this, "Storage permissions are needed for Exploring.", new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         ActivityCompat.requestPermissions(BaseActivity.this, storagePermissions, REQUEST_STORAGE);
@@ -287,4 +259,83 @@ public abstract class BaseActivity extends ActionBarActivity {
         }
     }
 
+    private Casty casty;
+    protected CastSession castSession;
+
+    @CallSuper
+    @Override
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        if(isWatch()){
+            return;
+        }
+        DocumentsApplication.getInstance().initCasty(this);
+        casty = DocumentsApplication.getInstance().getCasty();
+        casty.setOnConnectChangeListener(new Casty.OnConnectChangeListener() {
+            @Override
+            public void onConnected() {
+                castSession = casty.getCastSession();
+                supportInvalidateOptionsMenu();
+                WebServer.getServer().startServer(BaseActivity.this);
+            }
+
+            @Override
+            public void onDisconnected() {
+                WebServer.getServer().stopServer();
+            }
+        });
+        mRoots = DocumentsApplication.getRootsCache(this);
+    }
+
+    @CallSuper
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        final RootInfo root = getCurrentRoot();
+        if(!isSpecialDevice() && casty.isConnected()) {
+            if (findViewById(R.id.casty_mini_controller) == null) {
+                casty.addMiniController();
+            }
+        }
+        if(!isSpecialDevice() && (null != root && RootInfo.isChromecastFeature(root))) {
+            try {
+                casty.addMediaRouteMenuItem(menu);
+            } catch (Exception ignored){}
+        }
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        if(!isSpecialDevice()) {
+            boolean connected = (castSession != null) && castSession.isConnected();
+            MediaQueue queue = casty.getMediaQueue();
+            int queueCount = null != queue ? queue.getItemCount() : 0;
+            MenuItem showQueue = menu.findItem(R.id.action_show_queue);
+            if(null != showQueue) {
+                showQueue.setVisible(connected && queueCount > 0);
+            }
+        }
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if(item.getItemId() == R.id.action_show_queue){
+            final RootInfo root = getCurrentRoot();
+            DocumentsActivity activity = ((DocumentsActivity)this);
+            openRoot(activity, mRoots.getCastRoot(), root);
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        if(!isSpecialDevice() && Casty.isAvailable(this)) {
+            return CastContext.getSharedInstance(this).onDispatchVolumeKeyEventBeforeJellyBean(event)
+                    || super.dispatchKeyEvent(event);
+        } else {
+            return super.dispatchKeyEvent(event);
+        }
+    }
 }

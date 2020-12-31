@@ -25,7 +25,6 @@ import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
 import android.os.storage.StorageManager;
-import android.support.v4.content.res.ResourcesCompat;
 import android.text.TextUtils;
 
 import java.io.File;
@@ -38,9 +37,9 @@ import java.util.List;
 import dev.dworks.apps.anexplorer.R;
 import dev.dworks.apps.anexplorer.libcore.util.Objects;
 
-import static android.R.attr.label;
 import static dev.dworks.apps.anexplorer.misc.DiskInfo.FLAG_SD;
 import static dev.dworks.apps.anexplorer.misc.DiskInfo.FLAG_USB;
+import static dev.dworks.apps.anexplorer.misc.VolumeInfo.ID_EMULATED_INTERNAL;
 
 public final class StorageUtils {
     private static final String TAG = "StorageUtils";
@@ -66,6 +65,7 @@ public final class StorageUtils {
     public List<VolumeInfo> getVolumes() {
         List<VolumeInfo> mounts = new ArrayList<VolumeInfo>();
         List<Object> vi = null;
+        boolean first = false;
         try {
             Method getVolumeList = StorageManager.class.getDeclaredMethod("getVolumes");
             vi = (List<Object>)getVolumeList.invoke(mStorageManager);
@@ -89,6 +89,17 @@ public final class StorageUtils {
             String fsLabel = getString(object, "fsLabel");
             String path = getString(object, "path");
             String internalPath = getString(object, "internalPath");
+
+            if(Utils.hasPie() && !TextUtils.isEmpty(path)) {
+                id = TextUtils.isEmpty(id) && !TextUtils.isEmpty(path)
+                        ? (path.contains(ID_EMULATED_INTERNAL) ? ID_EMULATED_INTERNAL : "") : id;
+                if(TextUtils.isEmpty(id)){
+                    if(!first){
+                        first = true;
+                        id = ID_EMULATED_INTERNAL;
+                    }
+                }
+            }
 
             VolumeInfo volumeInfo = new VolumeInfo(id, type, disk, partGuid);
             volumeInfo.mountFlags = mountFlags;
@@ -144,6 +155,18 @@ public final class StorageUtils {
             String mUuid = getString(object, "mUuid");
             String mUserLabel = getString(object, "mUserLabel");
             String mState = getString(object, "mState");
+
+            if(Utils.hasPie()) {
+                android.os.storage.StorageVolume volume = mStorageManager.getStorageVolume(mPath);
+                if(null != volume) {
+                    mPrimary = volume.isEmulated();
+                    mEmulated = volume.isEmulated();
+                    mRemovable = volume.isRemovable();
+                    mUserLabel = volume.getDescription(mContext);
+                    mFsUuid = volume.getUuid();
+                    mState = volume.getState();
+                }
+            }
 
             StorageVolume storageVolume = new StorageVolume(mStorageId, mPath, mDescription, mPrimary,
                     mRemovable, mEmulated, mMtpReserveSize, mAllowMassStorage, mMaxFileSize);
@@ -347,7 +370,7 @@ public final class StorageUtils {
 	
 	/**
 	 * @param isTotal  The parameter for calculating total size
-	 * @return return Total Size when isTotal is {@value true} else return Free Size of Internal memory(data folder)
+	 * @return return Total Size when isTotal is true else return Free Size of Internal memory(data folder)
 	 */
 	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR2)
     @SuppressWarnings("deprecation")

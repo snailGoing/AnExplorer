@@ -24,8 +24,6 @@ import android.database.MatrixCursor;
 import android.database.MergeCursor;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.v4.util.ArrayMap;
 import android.text.format.DateUtils;
 import android.util.Log;
 
@@ -40,6 +38,8 @@ import java.util.concurrent.FutureTask;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import androidx.annotation.NonNull;
+import androidx.collection.ArrayMap;
 import dev.dworks.apps.anexplorer.BaseActivity.State;
 import dev.dworks.apps.anexplorer.DocumentsApplication;
 import dev.dworks.apps.anexplorer.cursor.FilteringCursorWrapper;
@@ -97,70 +97,6 @@ public class RecentLoader extends AsyncTaskLoader<DirectoryResult> {
     private volatile boolean mFirstPassDone;
 
     private DirectoryResult mResult;
-
-
-    // TODO: create better transfer of ownership around cursor to ensure its
-    // closed in all edge cases.
-
-    public class RecentTask extends FutureTask<Cursor> implements Runnable, Closeable {
-        public final String authority;
-        public final String rootId;
-
-        private Cursor mWithRoot;
-
-        public RecentTask(@NonNull Runnable runnable, String authority, String rootId) {
-            super(runnable, null);
-            this.authority = authority;
-            this.rootId = rootId;
-        }
-
-        @Override
-        public void run() {
-            if (isCancelled()) return;
-
-            try {
-                mQueryPermits.acquire();
-            } catch (InterruptedException e) {
-                return;
-            }
-
-            try {
-                runInternal();
-            } finally {
-                mQueryPermits.release();
-            }
-        }
-
-        public void runInternal() {
-            ContentProviderClient client = null;
-            try {
-                client = DocumentsApplication.acquireUnstableProviderOrThrow(
-                        getContext().getContentResolver(), authority);
-
-                final Uri uri = DocumentsContract.buildRecentDocumentsUri(authority, rootId);
-                final Cursor cursor = client.query(
-                        uri, null, null, null, DirectoryLoader.getQuerySortOrder(mSortOrder));
-                mWithRoot = new RootCursorWrapper(authority, rootId, cursor, MAX_DOCS_FROM_ROOT);
-
-            } catch (Exception e) {
-                Log.w(TAG, "Failed to load " + authority + ", " + rootId, e);
-            } finally {
-                ContentProviderClientCompat.releaseQuietly(client);
-            }
-
-            set(mWithRoot);
-
-            mFirstPassLatch.countDown();
-            if (mFirstPassDone) {
-                onContentChanged();
-            }
-        }
-
-        @Override
-        public void close() throws IOException {
-            IoUtils.closeQuietly(mWithRoot);
-        }
-    }
 
     public RecentLoader(Context context, RootsCache roots, State state) {
         super(context);
@@ -317,11 +253,82 @@ public class RecentLoader extends AsyncTaskLoader<DirectoryResult> {
         // Ensure the loader is stopped
         onStopLoading();
 
-        for (RecentTask task : mTasks.values()) {
-            IoUtils.closeQuietly(task);
+        synchronized (mTasks) {
+            for (RecentTask task : mTasks.values()) {
+                IoUtils.closeQuietly(task);
+            }
         }
 
         IoUtils.closeQuietly(mResult);
         mResult = null;
+    }
+
+    // TODO: create better transfer of ownership around cursor to ensure its
+    // closed in all edge cases.
+
+    public class RecentTask extends FutureTask<Cursor> implements Runnable, Closeable {
+        public final String authority;
+        public final String rootId;
+
+        private Cursor mWithRoot;
+        private boolean mIsClosed = false;
+
+        public RecentTask(@NonNull Runnable runnable, String authority, String rootId) {
+            super(runnable, null);
+            this.authority = authority;
+            this.rootId = rootId;
+        }
+
+        @Override
+        public void run() {
+            if (isCancelled()) return;
+
+            try {
+                mQueryPermits.acquire();
+            } catch (InterruptedException e) {
+                return;
+            }
+
+            try {
+                runInternal();
+            } finally {
+                mQueryPermits.release();
+            }
+        }
+
+        private synchronized void runInternal() {
+            if (mIsClosed) {
+                return;
+            }
+
+            ContentProviderClient client = null;
+            try {
+                client = DocumentsApplication.acquireUnstableProviderOrThrow(
+                        getContext().getContentResolver(), authority);
+
+                final Uri uri = DocumentsContract.buildRecentDocumentsUri(authority, rootId);
+                final Cursor cursor = client.query(
+                        uri, null, null, null, DirectoryLoader.getQuerySortOrder(mSortOrder));
+                mWithRoot = new RootCursorWrapper(authority, rootId, cursor, MAX_DOCS_FROM_ROOT);
+
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to load " + authority + ", " + rootId, e);
+            } finally {
+                ContentProviderClientCompat.releaseQuietly(client);
+            }
+
+            set(mWithRoot);
+
+            mFirstPassLatch.countDown();
+            if (mFirstPassDone) {
+                onContentChanged();
+            }
+        }
+
+        @Override
+        public void close() throws IOException {
+            IoUtils.closeQuietly(mWithRoot);
+            mIsClosed = true;
+        }
     }
 }

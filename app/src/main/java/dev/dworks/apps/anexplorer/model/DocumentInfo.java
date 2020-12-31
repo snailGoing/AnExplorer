@@ -35,6 +35,7 @@ import dev.dworks.apps.anexplorer.DocumentsApplication;
 import dev.dworks.apps.anexplorer.cursor.RootCursorWrapper;
 import dev.dworks.apps.anexplorer.libcore.io.IoUtils;
 import dev.dworks.apps.anexplorer.misc.ContentProviderClientCompat;
+import dev.dworks.apps.anexplorer.misc.MimePredicate;
 import dev.dworks.apps.anexplorer.model.DocumentsContract.Document;
 import dev.dworks.apps.anexplorer.provider.DocumentsProvider;
 
@@ -164,8 +165,6 @@ public class DocumentInfo implements Durable, Parcelable {
         this.authority = authority;
         this.documentId = getCursorString(cursor, Document.COLUMN_DOCUMENT_ID);
         this.mimeType = getCursorString(cursor, Document.COLUMN_MIME_TYPE);
-        this.documentId = getCursorString(cursor, Document.COLUMN_DOCUMENT_ID);
-        this.mimeType = getCursorString(cursor, Document.COLUMN_MIME_TYPE);
         this.displayName = getCursorString(cursor, Document.COLUMN_DISPLAY_NAME);
         this.lastModified = getCursorLong(cursor, Document.COLUMN_LAST_MODIFIED);
         this.flags = getCursorInt(cursor, Document.COLUMN_FLAGS);
@@ -210,7 +209,7 @@ public class DocumentInfo implements Durable, Parcelable {
         }
     }
 
-    private void deriveFields() {
+    public void deriveFields() {
         derivedUri = DocumentsContract.buildDocumentUri(authority, documentId);
     }
 
@@ -360,4 +359,9 @@ public class DocumentInfo implements Durable, Parcelable {
 
         return sCollator.compare(lhs, rhs);
     }
+
+    public boolean isMedia(){
+        return MimePredicate.mimeMatches(MimePredicate.MEDIA_MIMES, mimeType);
+    }
+
 }

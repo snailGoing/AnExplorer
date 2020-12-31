@@ -1,7 +1,6 @@
 package dev.dworks.apps.anexplorer.misc;
 
 import android.content.ContentResolver;
-import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
@@ -9,10 +8,7 @@ import android.database.Cursor;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.provider.MediaStore;
-import android.support.annotation.NonNull;
 import android.support.provider.DocumentFile;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.content.FileProvider;
 import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
@@ -20,6 +16,7 @@ import android.webkit.MimeTypeMap;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -31,12 +28,15 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
 
+import androidx.annotation.NonNull;
 import dev.dworks.apps.anexplorer.R;
 import dev.dworks.apps.anexplorer.libcore.io.IoUtils;
 import dev.dworks.apps.anexplorer.model.DocumentInfo;
@@ -53,6 +53,7 @@ public class FileUtils {
     /** Regular expression for safe filenames: no spaces or metacharacters */
     private static final Pattern SAFE_FILENAME_PATTERN = Pattern.compile("[\\w%+,./=_-]+");
     private static final File[] EMPTY = new File[0];
+    private static final Locale LOCALE = Resources.getSystem().getConfiguration().locale;
 
     /**
      * Test if a file lives under the given directory, either as a direct child
@@ -583,11 +584,12 @@ public class FileUtils {
 
         @Override
         public boolean accept(File dir, String filename) {
+            final String name = filename.toLowerCase(LOCALE);
             if (!onlyFolders && (!filename.startsWith("."))) {
-                return filename.toLowerCase(Resources.getSystem().getConfiguration().locale).contains(searchQuery);
+                return name.contains(searchQuery);
             } else {
                 if (!dir.isDirectory() && !filename.startsWith(".")) {
-                    return filename.toLowerCase(Resources.getSystem().getConfiguration().locale).contains(searchQuery);
+                    return name.contains(searchQuery) || name.endsWith(searchQuery);
                 }
             }
             return false;
@@ -931,8 +933,26 @@ public class FileUtils {
             return MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
         }else if ("video".equals(typeOnly)) {
             return MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
-        } else {
-            return MediaStore.Files.getContentUri("external");
         }
+        return null;
+    }
+
+    public static File getPreviewFile(File folder){
+        File[] files = folder.listFiles(new FileFilter() {
+            @Override
+            public boolean accept(File pathname) {
+                return !pathname.isDirectory();
+            }
+        });
+        Arrays.sort(files, new Comparator<File>(){
+            @Override
+            public int compare(File f1, File f2) {
+                return Long.compare(f2.lastModified(), f1.lastModified());
+            }
+        });
+        if (files.length == 0){
+            return null;
+        }
+        return files[0];
     }
 }

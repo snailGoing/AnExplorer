@@ -36,12 +36,12 @@ import android.os.Bundle;
 import android.os.CancellationSignal;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
-import android.support.annotation.CallSuper;
 import android.util.Log;
 
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
+import androidx.annotation.CallSuper;
 import dev.dworks.apps.anexplorer.libcore.io.IoUtils;
 import dev.dworks.apps.anexplorer.libcore.util.Objects;
 import dev.dworks.apps.anexplorer.misc.Utils;
@@ -49,8 +49,7 @@ import dev.dworks.apps.anexplorer.model.DocumentsContract;
 import dev.dworks.apps.anexplorer.model.DocumentsContract.Document;
 import dev.dworks.apps.anexplorer.model.DocumentsContract.Root;
 
-import static android.support.v4.app.AppOpsManagerCompat.MODE_ALLOWED;
-import static dev.dworks.apps.anexplorer.model.DocumentsContract.EXTRA_INFO;
+import static androidx.core.app.AppOpsManagerCompat.MODE_ALLOWED;
 import static dev.dworks.apps.anexplorer.model.DocumentsContract.METHOD_COMPRESS_DOCUMENT;
 import static dev.dworks.apps.anexplorer.model.DocumentsContract.METHOD_COPY_DOCUMENT;
 import static dev.dworks.apps.anexplorer.model.DocumentsContract.METHOD_CREATE_DOCUMENT;
@@ -69,7 +68,6 @@ import static dev.dworks.apps.anexplorer.model.DocumentsContract.getRootId;
 import static dev.dworks.apps.anexplorer.model.DocumentsContract.getSearchDocumentsQuery;
 import static dev.dworks.apps.anexplorer.model.DocumentsContract.getTreeDocumentId;
 import static dev.dworks.apps.anexplorer.model.DocumentsContract.isTreeUri;
-import static dev.dworks.apps.anexplorer.model.DocumentsContract.uploadDocument;
 
 /**
  * Base class for a document provider. A document provider offers read and write

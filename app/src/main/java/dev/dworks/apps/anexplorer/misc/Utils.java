@@ -30,18 +30,10 @@ import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.ParcelFileDescriptor;
-import android.support.design.widget.Snackbar;
-import android.support.graphics.drawable.VectorDrawableCompat;
-import android.support.v4.app.ShareCompat;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.graphics.drawable.DrawableCompat;
-import android.support.v4.text.TextUtilsCompat;
-import android.support.v7.app.AppCompatDelegate;
 import android.text.Html;
 import android.text.Spanned;
 import android.text.format.DateUtils;
@@ -52,25 +44,42 @@ import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.webkit.WebView;
-import android.widget.Button;
 
 import java.io.File;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.List;
 import java.util.Locale;
 
+import androidx.annotation.IntDef;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.content.ContextCompat;
+import androidx.core.text.TextUtilsCompat;
+import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
 import dev.dworks.apps.anexplorer.BuildConfig;
 import dev.dworks.apps.anexplorer.DocumentsApplication;
-import dev.dworks.apps.anexplorer.R;
+import dev.dworks.apps.anexplorer.common.ActionBarActivity;
 import dev.dworks.apps.anexplorer.model.DocumentsContract;
 import dev.dworks.apps.anexplorer.model.RootInfo;
 import dev.dworks.apps.anexplorer.setting.SettingsActivity;
 
+import static android.content.Intent.ACTION_SENDTO;
 import static android.service.quicksettings.TileService.ACTION_QS_TILE_PREFERENCES;
+import static com.google.android.material.snackbar.Snackbar.LENGTH_INDEFINITE;
+import static com.google.android.material.snackbar.Snackbar.LENGTH_LONG;
+import static com.google.android.material.snackbar.Snackbar.LENGTH_SHORT;
 
-public class Utils {
+public class Utils extends UtilsFlavour{
 
     public static final long KB_IN_BYTES = 1024;
+    private static final String ADMOB_TEST_AD_UNIT_ID = "ca-app-pub-3940256099942544/2247696110";
     public static final String INTERSTITIAL_APP_UNIT_ID = "ca-app-pub-6407484780907805/9134520474";
+    public static final String REWARDED_APP_UNIT_ID = BuildConfig.DEBUG
+            ? "ca-app-pub-3940256099942544/5224354917" : "ca-app-pub-6407484780907805/5163392305";
+    public static final String NATIVE_APP_UNIT_ID = BuildConfig.DEBUG
+            ? ADMOB_TEST_AD_UNIT_ID : "ca-app-pub-6407484780907805/5595623254";
+    public static final String NATIVE_BIG_APP_UNIT_ID = BuildConfig.DEBUG
+            ? ADMOB_TEST_AD_UNIT_ID : "ca-app-pub-6407484780907805/7834488376";
 
     public static final String DIRECTORY_APPBACKUP = "AppBackup";
 
@@ -80,6 +89,9 @@ public class Utils {
     public static final String EXTRA_QUERY = "query";
     public static final String EXTRA_CONNECTION_ID = "connection_id";
     public static final String EXTRA_IGNORE_STATE = "ignoreState";
+
+    public static String AMAZON_FEATURE_FIRE_TV = "amazon.hardware.fire_tv";
+    public static final String FEATURE_PC = "android.hardware.type.pc";
 
     static final String[] BinaryPlaces = { "/data/bin/", "/system/bin/", "/system/xbin/", "/sbin/",
         "/data/local/xbin/", "/data/local/bin/", "/system/sd/xbin/", "/system/bin/failsafe/",
@@ -140,6 +152,10 @@ public class Utils {
 
     public static boolean hasOreoMR1() {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1;
+    }
+
+    public static boolean hasPie() {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.P;
     }
 
     public static boolean hasMoreHeap(){
@@ -307,12 +323,15 @@ public class Utils {
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
     public static boolean isActivityAlive(Activity activity) {
-        return !(null == activity
-                || (null != activity && Utils.hasJellyBeanMR1() ? activity.isDestroyed() : activity.isFinishing()));
+        return !(null == activity || (Utils.hasJellyBeanMR1() ? activity.isDestroyed() : activity.isFinishing()));
     }
 
     public static boolean isAPK(String mimeType){
         return MimePredicate.mimeMatches(DocumentsContract.Document.MIME_TYPE_APK, mimeType);
+    }
+
+    public static boolean isPDF(String mimeType){
+        return MimePredicate.mimeMatches(DocumentsContract.Document.MIME_TYPE_PDF, mimeType);
     }
 
     public static boolean isDir(String mimeType){
@@ -360,9 +379,9 @@ public class Utils {
 
     public static Uri getAppProStoreUri(){
         if(isAmazonBuild()){
-            return Uri.parse("http://www.amazon.com/gp/mas/dl/android?p=" + BuildConfig.APPLICATION_ID+".pro" + "&showAll=1");
+            return Uri.parse("http://www.amazon.com/gp/mas/dl/android?p=" + "dev.dworks.apps.anexplorer.pro" + "&showAll=1");
         }
-        return Uri.parse("https://play.google.com/store/apps/details?id=" + BuildConfig.APPLICATION_ID+".pro");
+        return Uri.parse("market://details?id=" + "dev.dworks.apps.anexplorer.pro");
     }
 
     public static boolean hasFeature(Context context, String feature) {
@@ -379,39 +398,38 @@ public class Utils {
 
     public static boolean isTelevision(Context context) {
         UiModeManager uiModeManager = (UiModeManager) context.getSystemService(Context.UI_MODE_SERVICE);
-        return uiModeManager.getCurrentModeType() == Configuration.UI_MODE_TYPE_TELEVISION;
+        boolean isFireTV = hasFeature(context, AMAZON_FEATURE_FIRE_TV);
+        return uiModeManager.getCurrentModeType() == Configuration.UI_MODE_TYPE_TELEVISION || isFireTV;
     }
 
-    public static void showRetrySnackBar(View view, String text, View.OnClickListener listener){
-        Snackbar snackbar = Snackbar.make(view, text, Snackbar.LENGTH_INDEFINITE);
-        if (null != listener) {
-            snackbar.setAction("RETRY", listener)
-                    .setActionTextColor(SettingsActivity.getAccentColor());
-        }
-        snackbar.show();
+    public static boolean isWatch(Context context) {
+        UiModeManager uiModeManager = (UiModeManager) context.getSystemService(Context.UI_MODE_SERVICE);
+        return uiModeManager.getCurrentModeType() == Configuration.UI_MODE_TYPE_WATCH;
+    }
+
+    public static boolean isChromeBook(Context context) {
+        return hasFeature(context, FEATURE_PC);
+    }
+
+    public static void showError(Activity activity, int msg){
+        showSnackBar(activity, activity.getString(msg), LENGTH_SHORT, "ERROR", null);
+    }
+
+    public static void showPermanentRetrySnackBar(Activity activity, String text, View.OnClickListener listener){
+        showSnackBar(activity, text, LENGTH_INDEFINITE , "RETRY", listener);
     }
 
     public static void showRetrySnackBar(Activity activity, String text, View.OnClickListener listener){
-        Snackbar snackbar = Snackbar.make(activity.findViewById(R.id.content_view), text, Snackbar.LENGTH_INDEFINITE);
-        if (null != listener) {
-            snackbar.setAction("RETRY", listener)
-                    .setActionTextColor(SettingsActivity.getAccentColor());
-        }
-        snackbar.show();
+        showSnackBar(activity, text, LENGTH_LONG , "RETRY", listener);
     }
 
-    public static void showSnackBar(Activity activity, int text){
-        Snackbar snackbar = Snackbar.make(activity.findViewById(R.id.content_view), text, Snackbar.LENGTH_SHORT);
-        snackbar.show();
+    public static void showSnackBar(Activity activity, String message){
+        showSnackBar(activity, message, LENGTH_SHORT, null, null);
     }
 
-    public static void showSnackBar(Activity activity, String text, int duration, String action, View.OnClickListener listener){
-        Snackbar snackbar = Snackbar.make(activity.findViewById(R.id.content_view), text, duration);
-        if (null != listener) {
-            snackbar.setAction(action, listener)
-                    .setActionTextColor(SettingsActivity.getAccentColor());
-        }
-        snackbar.show();
+    public static void showSnackBar(Activity activity, String message,
+                                    int duration, String action, View.OnClickListener listener){
+        showMessage(activity, message, duration, action, listener);
     }
 
     public static Bitmap getVector2Bitmap(Context context, int id) {
@@ -430,35 +448,24 @@ public class Utils {
         return Math.round(px);
     }
 
-    public static void changeThemeStyle(AppCompatDelegate delegate) {
+    public static void changeThemeStyle() {
         int nightMode = Integer.valueOf(SettingsActivity.getThemeStyle());
-        if (nightMode != AppCompatDelegate.MODE_NIGHT_NO) {
-            try {
-                new WebView(DocumentsApplication.getInstance().getBaseContext());
-            } catch (Exception e) {
-            }
-        }
         AppCompatDelegate.setDefaultNightMode(nightMode);
-        delegate.setLocalNightMode(nightMode);
     }
 
-    public static void tintWidget(View view) {
-        tintWidget(view, SettingsActivity.getAccentColor());
+    public static void setAppThemeStyle(Context context) {
+        int nightMode = Integer.valueOf(SettingsActivity.getThemeStyle(context));
+        AppCompatDelegate.setDefaultNightMode(nightMode);
     }
 
-    public static void tintButton(Button view) {
-        view.setTextColor(SettingsActivity.getAccentColor());
-    }
-
-    public static void tintWidget(View view, int color) {
-        Drawable wrappedDrawable = DrawableCompat.wrap(view.getBackground());
-        DrawableCompat.setTint(wrappedDrawable.mutate(), color);
-        view.setBackgroundDrawable(wrappedDrawable);
+    public static boolean isDarkTheme(){
+        int nightMode = Integer.valueOf(SettingsActivity.getThemeStyle());
+        return nightMode == AppCompatDelegate.MODE_NIGHT_YES;
     }
 
     public static boolean isRTL() {
         return TextUtilsCompat.getLayoutDirectionFromLocale(Locale.getDefault())
-                == android.support.v4.view.ViewCompat.LAYOUT_DIRECTION_RTL;
+                == androidx.core.view.ViewCompat.LAYOUT_DIRECTION_RTL;
     }
 
     public static File getAppsBackupFile(Context context){
@@ -524,18 +531,30 @@ public class Utils {
     }
 
     public static String getSuffix(){
-        return Utils.isProVersion() ? " Pro" : ""
-                + (DocumentsApplication.isTelevision()? " for Android TV" : "");
+        String suffix = "";
+        if(DocumentsApplication.isTelevision()){
+            suffix = " for Android TV";
+        } else if(DocumentsApplication.isWatch()){
+            suffix = " for Wear OS";
+        } else if(DocumentsApplication.isChromebook()){
+            suffix = " for Chromebook";
+        }
+        return Utils.isProVersion() ? " Pro" : "" + suffix;
     }
 
     public static void openFeedback(Activity activity){
-        ShareCompat.IntentBuilder
-                .from(activity)
-                .setEmailTo(new String[]{"hakr@dworks.in"})
-                .setSubject("AnExplorer Feedback" + getSuffix())
-                .setType("text/email")
-                .setChooserTitle("Send Feedback")
-                .startChooser();
+        sendEmail(activity, "Send Feedback", "AnExplorer Feedback");
+    }
+
+    public static void sendEmail(Activity activity, String title, String subject){
+        final Intent result = new Intent(ACTION_SENDTO);
+        result.setData(Uri.parse("mailto:"));
+        result.putExtra(Intent.EXTRA_EMAIL, new String[]{"support@dworks.io"});
+        result.putExtra(Intent.EXTRA_SUBJECT, subject);
+        result.putExtra(Intent.EXTRA_TEXT, "AnExplorer Feedback"
+                + getSuffix() + " v" + BuildConfig.VERSION_NAME);
+
+        activity.startActivity(Intent.createChooser(result, title));
     }
 
     public static void openPlaystore(Context çontext){
@@ -551,5 +570,18 @@ public class Utils {
         } else {
             return Html.fromHtml(text);
         }
+    }
+
+    @IntDef({View.VISIBLE, View.INVISIBLE, View.GONE})
+    @Retention(RetentionPolicy.SOURCE)
+    public @interface Visibility {}
+
+    @Visibility
+    public static int getVisibility(boolean show) {
+        return show ? View.VISIBLE : View.GONE;
+    }
+
+    public static boolean checkUSBDevices() {
+        return !hasNougat() || DocumentsApplication.isTelevision();
     }
 }

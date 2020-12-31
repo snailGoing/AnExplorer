@@ -17,8 +17,8 @@
 
 package dev.dworks.apps.anexplorer;
 
+import android.app.Activity;
 import android.app.ActivityManager;
-import android.app.Application;
 import android.content.BroadcastReceiver;
 import android.content.ContentProviderClient;
 import android.content.ContentResolver;
@@ -28,21 +28,25 @@ import android.content.IntentFilter;
 import android.graphics.Point;
 import android.net.Uri;
 import android.os.RemoteException;
-import android.support.v7.app.AppCompatDelegate;
 import android.text.format.DateUtils;
 
 import com.cloudrail.si.CloudRail;
 
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.collection.ArrayMap;
+import dev.dworks.apps.anexplorer.cast.Casty;
 import dev.dworks.apps.anexplorer.misc.AnalyticsManager;
 import dev.dworks.apps.anexplorer.misc.ContentProviderClientCompat;
 import dev.dworks.apps.anexplorer.misc.CrashReportingManager;
+import dev.dworks.apps.anexplorer.misc.NotificationUtils;
 import dev.dworks.apps.anexplorer.misc.RootsCache;
 import dev.dworks.apps.anexplorer.misc.SAFManager;
 import dev.dworks.apps.anexplorer.misc.ThumbnailCache;
 import dev.dworks.apps.anexplorer.misc.Utils;
+import dev.dworks.apps.anexplorer.server.SimpleWebServer;
 import dev.dworks.apps.anexplorer.setting.SettingsActivity;
 
-public class DocumentsApplication extends AppFlavour {
+public class DocumentsApplication extends AppPaymentFlavour {
 	private static final long PROVIDER_ANR_TIMEOUT = 20 * DateUtils.SECOND_IN_MILLIS;
     private static DocumentsApplication sInstance;
 
@@ -51,27 +55,40 @@ public class DocumentsApplication extends AppFlavour {
     }
 
     private RootsCache mRoots;
+    private ArrayMap<Integer, Long> mSizes = new ArrayMap<Integer, Long>();
     private SAFManager mSAFManager;
     private Point mThumbnailsSize;
-    private ThumbnailCache mThumbnails;
+    private ThumbnailCache mThumbnailCache;
     private static boolean isTelevision;
+    private static boolean isWatch;
+    private static boolean isChromebook;
+    private SimpleWebServer simpleWebServer;
+    private boolean isStarted;
+    private Casty mCasty;
 
     public static RootsCache getRootsCache(Context context) {
         return ((DocumentsApplication) context.getApplicationContext()).mRoots;
+    }
+
+    public static RootsCache getRootsCache() {
+        return ((DocumentsApplication) DocumentsApplication.getInstance().getApplicationContext()).mRoots;
+    }
+
+    public static ArrayMap<Integer, Long> getFolderSizes() {
+        return getInstance().mSizes;
     }
 
     public static SAFManager getSAFManager(Context context) {
         return ((DocumentsApplication) context.getApplicationContext()).mSAFManager;
     }
 
-    public static ThumbnailCache getThumbnailsCache(Context context, Point size) {
+    public static ThumbnailCache getThumbnailCache(Context context) {
         final DocumentsApplication app = (DocumentsApplication) context.getApplicationContext();
-        final ThumbnailCache thumbnails = app.mThumbnails;
-        if (!size.equals(app.mThumbnailsSize)) {
-            thumbnails.evictAll();
-            app.mThumbnailsSize = size;
-        }
-        return thumbnails;
+        return app.mThumbnailCache;
+    }
+
+    public static ThumbnailCache getThumbnailsCache(Context context, Point size) {
+        return getThumbnailCache(context);
     }
 
     public static ContentProviderClient acquireUnstableProviderOrThrow(
@@ -86,6 +103,7 @@ public class DocumentsApplication extends AppFlavour {
 
     @Override
     public void onCreate() {
+        Utils.setAppThemeStyle(getBaseContext());
         super.onCreate();
         if(!BuildConfig.DEBUG) {
             AnalyticsManager.intialize(getApplicationContext());
@@ -94,14 +112,14 @@ public class DocumentsApplication extends AppFlavour {
         final ActivityManager am = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
         final int memoryClassBytes = am.getMemoryClass() * 1024 * 1024;
         CloudRail.setAppKey(BuildConfig.LICENSE_KEY);
-        CrashReportingManager.enable(getApplicationContext(), true);
+        CrashReportingManager.enable(getApplicationContext(), !BuildConfig.DEBUG);
 
         mRoots = new RootsCache(this);
         mRoots.updateAsync();
 
         mSAFManager = new SAFManager(this);
 
-        mThumbnails = new ThumbnailCache(memoryClassBytes / 4);
+        mThumbnailCache = new ThumbnailCache(memoryClassBytes / 4);
 
         final IntentFilter packageFilter = new IntentFilter();
         packageFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
@@ -116,8 +134,15 @@ public class DocumentsApplication extends AppFlavour {
         registerReceiver(mCacheReceiver, localeFilter);
 
         isTelevision = Utils.isTelevision(this);
-        if(isTelevision && Integer.valueOf(SettingsActivity.getThemeStyle()) != AppCompatDelegate.MODE_NIGHT_YES){
+        isWatch = Utils.isWatch(this);
+        isChromebook = Utils.isChromeBook(this);
+        if((isTelevision || isWatch) && Integer.valueOf(SettingsActivity.getThemeStyle())
+                != AppCompatDelegate.MODE_NIGHT_YES){
             SettingsActivity.setThemeStyle(AppCompatDelegate.MODE_NIGHT_YES);
+        }
+
+        if(Utils.hasOreo()) {
+            NotificationUtils.createNotificationChannels(this);
         }
     }
 
@@ -125,15 +150,18 @@ public class DocumentsApplication extends AppFlavour {
         return sInstance;
     }
 
+    public void initCasty(Activity activity) {
+        mCasty = Casty.create(activity);
+    }
+
+    public Casty getCasty() {
+        return mCasty;
+    }
+
     @Override
     public void onTrimMemory(int level) {
         super.onTrimMemory(level);
-
-        if (level >= TRIM_MEMORY_MODERATE) {
-            mThumbnails.evictAll();
-        } else if (level >= TRIM_MEMORY_BACKGROUND) {
-            mThumbnails.trimToSize(mThumbnails.size() / 2);
-        }
+        mThumbnailCache.onTrimMemory(level);
     }
 
     private BroadcastReceiver mCacheReceiver = new BroadcastReceiver() {
@@ -149,7 +177,19 @@ public class DocumentsApplication extends AppFlavour {
         }
     };
 
+    public static boolean isSpecialDevice() {
+        return isTelevision() || isWatch() || isChromebook();
+    }
+
     public static boolean isTelevision() {
         return isTelevision;
+    }
+
+    public static boolean isWatch() {
+        return isWatch;
+    }
+
+    public static boolean isChromebook() {
+        return isChromebook;
     }
 }

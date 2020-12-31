@@ -23,7 +23,6 @@ import dev.dworks.apps.anexplorer.misc.RootsCache;
 import dev.dworks.apps.anexplorer.network.NetworkConnection;
 import dev.dworks.apps.anexplorer.provider.CloudStorageProvider;
 import dev.dworks.apps.anexplorer.provider.ExplorerProvider;
-import dev.dworks.apps.anexplorer.provider.NetworkStorageProvider;
 
 import static dev.dworks.apps.anexplorer.BuildConfig.BOX_CLIENT_ID;
 import static dev.dworks.apps.anexplorer.BuildConfig.BOX_CLIENT_KEY;
@@ -160,7 +159,7 @@ public class CloudConnection {
         if (type.equals(TYPE_GDRIVE)) {
             ((GoogleDrive) cloudStorage).useAdvancedAuthentication();
         } else if (type.equals(TYPE_DROPBOX)) {
-            ((Dropbox) cloudStorage).useAdvancedAuthentication();
+           // ((Dropbox) cloudStorage).useAdvancedAuthentication();
         }
         cloudStorage.login();
     }
@@ -203,16 +202,20 @@ public class CloudConnection {
 
         @Override
         protected Boolean doInBackground(Void... params) {
-            mCloudConnection.login();
-            mCloudConnection.prepare();
-            return CloudStorageProvider.addUpdateConnection(mActivity, mCloudConnection);
+            try {
+                mCloudConnection.login();
+                mCloudConnection.prepare();
+                return CloudStorageProvider.addUpdateConnection(mActivity, mCloudConnection);
+            } catch (Exception e) {
+                return false;
+            }
         }
 
         @Override
         protected void onPostExecute(Boolean result) {
             if (result) {
                 RootsCache.updateRoots(mActivity, CloudStorageProvider.AUTHORITY);
-                ConnectionsFragment connectionsFragment = ConnectionsFragment.get(mActivity.getFragmentManager());
+                ConnectionsFragment connectionsFragment = ConnectionsFragment.get(mActivity.getSupportFragmentManager());
                 if(null != connectionsFragment){
                     connectionsFragment.reload();
                     connectionsFragment.openConnectionRoot(mCloudConnection);

@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 package dev.dworks.apps.anexplorer.misc;
+
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.view.ActionMode;
 import android.util.Pair;
 import android.util.SparseBooleanArray;
 import android.view.Menu;
@@ -27,6 +26,10 @@ import android.widget.Adapter;
 import android.widget.AdapterView;
 
 import java.util.HashSet;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.ActionMode;
+import androidx.fragment.app.Fragment;
 /**
  * Utilities for handling multiple selection in list views. Contains functionality similar to {@link
  * AbsListView#CHOICE_MODE_MULTIPLE_MODAL} which works with {@link AppCompatActivity} and
@@ -91,7 +94,7 @@ public class MultiSelectionUtil {
         }
         /**
          * This method should be called from your {@link AppCompatActivity} or
-         * {@link android.support.v4.app.Fragment Fragment} to allow the controller to restore any
+         * {@link Fragment Fragment} to allow the controller to restore any
          * instance state.
          *
          * @param savedInstanceState - The state passed to your Activity or Fragment.
@@ -111,7 +114,7 @@ public class MultiSelectionUtil {
         /**
          * This method should be called from
          * {@link AppCompatActivity#onSaveInstanceState(android.os.Bundle)} or
-         * {@link android.support.v4.app.Fragment#onSaveInstanceState(android.os.Bundle)
+         * {@link Fragment#onSaveInstanceState(android.os.Bundle)
          * Fragment.onSaveInstanceState(Bundle)} to allow the controller to save its instance
          * state.
          *
