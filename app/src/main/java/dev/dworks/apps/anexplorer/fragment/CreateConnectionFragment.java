@@ -22,12 +22,12 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.v4.app.FragmentManager;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.widget.AppCompatCheckBox;
-import android.support.v7.widget.AppCompatEditText;
-import android.support.v7.widget.AppCompatSpinner;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.FragmentManager;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.widget.AppCompatCheckBox;
+import androidx.appcompat.widget.AppCompatEditText;
+import androidx.appcompat.widget.AppCompatSpinner;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -35,7 +35,8 @@ import android.widget.ArrayAdapter;
 import android.widget.CompoundButton;
 
 import dev.dworks.apps.anexplorer.BaseActivity;
-import dev.dworks.apps.anexplorer.DialogFragment;
+import dev.dworks.apps.anexplorer.common.DialogBuilder;
+import dev.dworks.apps.anexplorer.common.DialogFragment;
 import dev.dworks.apps.anexplorer.R;
 import dev.dworks.apps.anexplorer.misc.AsyncTask;
 import dev.dworks.apps.anexplorer.misc.ProviderExecutor;
@@ -93,7 +94,7 @@ public class CreateConnectionFragment extends DialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         final Context context = getActivity();
 
-        final AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        final DialogBuilder builder = new DialogBuilder(context);
         final LayoutInflater dialogInflater = getActivity().getLayoutInflater();
 
         final View view = dialogInflater.inflate(R.layout.dialog_create_connection, null, false);

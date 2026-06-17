@@ -27,6 +27,7 @@ import android.content.Intent;
 import android.content.Loader;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.content.res.Resources;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
@@ -34,7 +35,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.provider.Settings;
-import android.support.v7.app.AlertDialog;
+import androidx.appcompat.app.AlertDialog;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
@@ -54,10 +55,10 @@ import java.util.Comparator;
 
 import dev.dworks.apps.anexplorer.BaseActivity;
 import dev.dworks.apps.anexplorer.BaseActivity.State;
-import dev.dworks.apps.anexplorer.DialogFragment;
 import dev.dworks.apps.anexplorer.DocumentsApplication;
 import dev.dworks.apps.anexplorer.R;
 import dev.dworks.apps.anexplorer.adapter.RootsExpandableAdapter;
+import dev.dworks.apps.anexplorer.common.DialogBuilder;
 import dev.dworks.apps.anexplorer.libcore.util.Objects;
 import dev.dworks.apps.anexplorer.loader.RootsLoader;
 import dev.dworks.apps.anexplorer.misc.AnalyticsManager;
@@ -86,7 +87,7 @@ public class RootsFragment extends Fragment {
 
     private LoaderCallbacks<Collection<RootInfo>> mCallbacks;
 
-    private static final String EXTRA_INCLUDE_APPS = "includeApps";
+    public static final String EXTRA_INCLUDE_APPS = "includeApps";
     private static final String GROUP_SIZE = "group_size";
     private static final String GROUP_IDS = "group_ids";
     private int group_size = 0;
@@ -126,10 +127,10 @@ public class RootsFragment extends Fragment {
 
         DisplayMetrics metrics = new DisplayMetrics();
         getActivity().getWindowManager().getDefaultDisplay().getMetrics(metrics);
-        int width = Utils.dpToPx(302);
+        int width = getResources().getDimensionPixelSize(R.dimen.side_navigation_width);
 
         boolean rtl = Utils.isRTL();
-        int leftPadding = rtl ? 10 : 50;
+        int leftPadding = rtl ? 10 : 60;
         int rightPadding = rtl ? 50 : 10;
         int leftWidth = width - Utils.dpToPx(leftPadding);
         int rightWidth = width - Utils.dpToPx(rightPadding);
@@ -340,29 +341,23 @@ public class RootsFragment extends Fragment {
     };
 
     private void removeBookark(final BookmarkItem item) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        DialogBuilder builder = new DialogBuilder(getActivity());
         builder.setMessage("Remove bookmark?")
         .setCancelable(false)
         .setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int did) {
-                dialog.dismiss();
                 int rows = getActivity().getContentResolver().delete(ExplorerProvider.buildBookmark(),
                         ExplorerProvider.BookmarkColumns.PATH + " = ? AND " +
                                 ExplorerProvider.BookmarkColumns.TITLE + " = ? ",
                         new String[]{item.root.path, item.root.title}
                 );
                 if (rows > 0) {
-                    ((BaseActivity) getActivity()).showInfo("Bookmark removed");
-
+                    Utils.showSnackBar(getActivity(), "Bookmark removed");
                     RootsCache.updateRoots(getActivity(), ExternalStorageProvider.AUTHORITY);
                 }
             }
-        }).setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int did) {
-                dialog.dismiss();
-            }
-        });
-        DialogFragment.showThemedDialog(builder);
+        }).setNegativeButton(android.R.string.cancel, null);
+        builder.showDialog();
     }
 
     public static class GroupItem {

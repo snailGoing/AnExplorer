@@ -33,8 +33,9 @@ import android.graphics.Point;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarDrawerToggle;
-import android.support.v7.widget.Toolbar;
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.appcompat.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -61,6 +62,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Executor;
 
+import dev.dworks.apps.anexplorer.common.RootsCommonFragment;
 import dev.dworks.apps.anexplorer.fragment.CreateDirectoryFragment;
 import dev.dworks.apps.anexplorer.fragment.DirectoryFragment;
 import dev.dworks.apps.anexplorer.fragment.RootsFragment;
@@ -79,7 +81,6 @@ import dev.dworks.apps.anexplorer.model.RootInfo;
 import dev.dworks.apps.anexplorer.provider.RecentsProvider;
 import dev.dworks.apps.anexplorer.provider.RecentsProvider.ResumeColumns;
 import dev.dworks.apps.anexplorer.setting.SettingsActivity;
-import dev.dworks.apps.anexplorer.ui.DirectoryContainerView;
 
 import static dev.dworks.apps.anexplorer.fragment.DirectoryFragment.ANIM_DOWN;
 import static dev.dworks.apps.anexplorer.fragment.DirectoryFragment.ANIM_NONE;
@@ -95,7 +96,6 @@ public class StandaloneActivity extends BaseActivity {
     private Spinner mToolbarStack;
     private Toolbar mRootsToolbar;
     private ActionBarDrawerToggle mDrawerToggle;
-    private DirectoryContainerView mDirectoryContainer;
     private boolean mIgnoreNextNavigation;
     private boolean mIgnoreNextClose;
     private boolean mIgnoreNextCollapse;
@@ -124,7 +124,6 @@ public class StandaloneActivity extends BaseActivity {
         getWindowManager().getDefaultDisplay().getSize(size);
         // a.width = (int) res.getFraction(R.dimen.dialog_width, size.x, size.x);
         getWindow().setAttributes(a);
-        mDirectoryContainer = (DirectoryContainerView) findViewById(R.id.container_directory);
         if (icicle != null) {
             mState = icicle.getParcelable(EXTRA_STATE);
         } else {
@@ -141,7 +140,7 @@ public class StandaloneActivity extends BaseActivity {
                     android.R.style.TextAppearance_DeviceDefault_Widget_ActionBar_Title);
         }
         setSupportActionBar(mToolbar);
-        RootsFragment.show(getFragmentManager(), null);
+        RootsCommonFragment.show(getFragmentManager(), null);
         if (!mState.restored) {
             new RestoreStackTask().execute();
         } else {
@@ -561,7 +560,7 @@ public class StandaloneActivity extends BaseActivity {
     }
 
     @Override
-    public void upadateActionItems(AbsListView mCurrentView) {
+    public void upadateActionItems(RecyclerView mCurrentView) {
 
     }
 
@@ -600,9 +599,8 @@ public class StandaloneActivity extends BaseActivity {
         final FragmentManager fm = getFragmentManager();
         final RootInfo root = getCurrentRoot();
         final DocumentInfo cwd = getCurrentDirectory();
-        mDirectoryContainer.setDrawDisappearingFirst(anim == ANIM_DOWN);
         if (cwd == null) {
-            DirectoryFragment.showRecentsOpen(fm, anim);
+            DirectoryFragment.showRecentsOpen(fm, anim, root);
             // Start recents in grid when requesting visual things
             final boolean visualMimes = MimePredicate.mimeMatches(
                     MimePredicate.VISUAL_MIMES, mState.acceptMimes);
@@ -617,7 +615,7 @@ public class StandaloneActivity extends BaseActivity {
                 DirectoryFragment.showNormal(fm, root, cwd, anim);
             }
         }
-        final RootsFragment roots = RootsFragment.get(fm);
+        final RootsCommonFragment roots = RootsCommonFragment.get(fm);
         if (roots != null) {
             roots.onCurrentRootChanged();
         }

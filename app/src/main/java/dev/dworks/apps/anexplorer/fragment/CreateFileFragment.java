@@ -25,15 +25,16 @@ import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.FragmentManager;
-import android.support.v7.app.AlertDialog;
+import androidx.fragment.app.FragmentManager;
+import androidx.appcompat.app.AlertDialog;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
 
-import dev.dworks.apps.anexplorer.DialogFragment;
+import dev.dworks.apps.anexplorer.common.DialogBuilder;
+import dev.dworks.apps.anexplorer.common.DialogFragment;
 import dev.dworks.apps.anexplorer.DocumentsActivity;
 import dev.dworks.apps.anexplorer.DocumentsApplication;
 import dev.dworks.apps.anexplorer.R;
@@ -74,8 +75,8 @@ public class CreateFileFragment extends DialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         final Context context = getActivity();
 
-        final AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        final LayoutInflater dialogInflater = LayoutInflater.from(builder.getContext());
+        final DialogBuilder builder = new DialogBuilder(context);
+        final LayoutInflater dialogInflater = LayoutInflater.from(context);
 
         final View view = dialogInflater.inflate(R.layout.dialog_create_dir, null, false);
         final EditText text1 = (EditText) view.findViewById(android.R.id.text1);
@@ -152,7 +153,7 @@ public class CreateFileFragment extends DialogFragment {
         protected void onPostExecute(Uri result) {
             if (result == null) {
                 if(!mActivity.isSAFIssue(mCwd.documentId)) {
-                    mActivity.showError(R.string.save_error);
+                    Utils.showError(mActivity, R.string.save_error);
                 }
             }
 

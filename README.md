@@ -1,8 +1,6 @@
 AnExplorer All-in-One File Manager
 ==================================
 
-<a href='https://ko-fi.com/H2H6BPBP' target='_blank'><img height='36' style='border:0px;height:36px;' src='https://az743702.vo.msecnd.net/cdn/kofi4.png?v=0' border='0' alt='Buy Me a Coffee at ko-fi.com' /></a>
-
 ![AnExplorer](https://github.com/DWorkS/AnExplorer/raw/master/header.jpg)
 
 AnExplorer File Manager (File Explorer) is an all-in-one file management tools.
@@ -38,28 +36,29 @@ Other Features
 * Acts as a Standalone File Picker from other applications such as attaching document files from gmail
 * Has high quality thumbnail support in list / gridview for all types of file like images, videos, album art for music files and applications
 
-Feedback is greatly appreciated. Any issues please report through mail only to hakr@dworks.in
+Feedback is greatly appreciated. Any issues please report through [website](https://anexplorer.io)
 
 
 Discussion
 ============
-Join [G+ community](https://plus.google.com/communities/104595695007143504224) for discussions
 
 App Links
 ============
-[<img alt="Get it on Google Play" height="80" src="https://play.google.com/intl/en_us/badges/images/generic/en_badge_web_generic.png">](https://play.google.com/store/apps/details?id=dev.dworks.apps.anexplorer&referrer=github)
-[<img alt="Get it on Amazon" height="60" style="margin-left: 8px;" src="https://images-na.ssl-images-amazon.com/images/G/01/mobile-apps/devportal2/res/images/amazon-underground-app-us-black.png" />](https://www.amazon.com/gp/mas/dl/android?p=dev.dworks.apps.anexplorer)
+[<img alt="Get it on Google Play" height="80" src="https://images.squarespace-cdn.com/content/v1/5a8c7f451f318d680f04db40/1536164406372-IMIW32D4K5FOM7O92T97/google-play-badge-padding.png">](https://play.google.com/store/apps/details?id=dev.dworks.apps.anexplorer&referrer=github)
+[<img alt="Get it on Amazon" height="80" src="https://images-na.ssl-images-amazon.com/images/G/01/mobile-apps/devportal2/res/images/amazon-appstore-badge-english-black.png" />](https://www.amazon.com/gp/mas/dl/android?p=dev.dworks.apps.anexplorer)
+[<img alt="Get it on Samsung Galaxy Store" height="80" src="https://d3unf4s5rp9dfh.cloudfront.net/SDP/GalaxyStore_English.png">](https://www.samsungapps.com/appquery/appDetail.as?appId=dev.dworks.apps.anexplorer&referrer=github)
+[<img alt="Get it on Aptoide" height="80" src="https://cdn6.aptoide.com/includes/themes/2014/images/aptoide_badge.svg">](https://d-works-file-manager.en.aptoide.com/app&referrer=github)
 
 Developed By
 ============
 
-* Hari Krishna Dulipudi - <hakr@dworks.in>
+* Hari Krishna Dulipudi
 
 
 License
 =======
 
-    Copyright 2014 - 2017 Hari Krishna Dulipudi
+    Copyright 2014 - 2024 Hari Krishna Dulipudi
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.

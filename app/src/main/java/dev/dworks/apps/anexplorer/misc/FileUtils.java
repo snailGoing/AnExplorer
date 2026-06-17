@@ -9,10 +9,10 @@ import android.database.Cursor;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.provider.MediaStore;
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 import android.support.provider.DocumentFile;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.content.FileProvider;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import android.text.TextUtils;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
@@ -931,8 +931,7 @@ public class FileUtils {
             return MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
         }else if ("video".equals(typeOnly)) {
             return MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
-        } else {
-            return MediaStore.Files.getContentUri("external");
         }
+        return null;
     }
 }

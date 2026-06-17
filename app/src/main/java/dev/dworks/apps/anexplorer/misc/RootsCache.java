@@ -31,8 +31,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.SystemClock;
-import android.support.annotation.GuardedBy;
-import android.support.v4.util.ArraySet;
+import androidx.annotation.GuardedBy;
+import androidx.collection.ArraySet;
 import android.util.Log;
 
 import java.util.ArrayList;
@@ -62,6 +62,8 @@ import dev.dworks.apps.anexplorer.provider.NetworkStorageProvider;
 import dev.dworks.apps.anexplorer.provider.RecentsProvider;
 import dev.dworks.apps.anexplorer.provider.RootedStorageProvider;
 import dev.dworks.apps.anexplorer.provider.UsbStorageProvider;
+
+import static dev.dworks.apps.anexplorer.DocumentsApplication.isWatch;
 
 /**
  * Cache of known storage backends and their roots.

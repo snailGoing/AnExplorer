@@ -30,8 +30,8 @@ import android.graphics.drawable.InsetDrawable;
 import android.graphics.drawable.LayerDrawable;
 import android.os.Bundle;
 import android.preference.Preference;
-import android.support.graphics.drawable.VectorDrawableCompat;
-import android.support.v7.app.AlertDialog;
+import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat;
+import androidx.appcompat.app.AlertDialog;
 import android.util.AttributeSet;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
@@ -45,7 +45,7 @@ import dev.dworks.apps.anexplorer.misc.CrashReportingManager;
 import dev.dworks.apps.anexplorer.misc.Utils;
 import dev.dworks.apps.anexplorer.setting.SettingsActivity;
 
-import static dev.dworks.apps.anexplorer.DialogFragment.tintButtons;
+import static dev.dworks.apps.anexplorer.common.DialogFragment.tintButtons;
 
 
 /**

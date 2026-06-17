@@ -2,15 +2,15 @@ package dev.dworks.apps.anexplorer;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.design.widget.AppBarLayout;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.widget.Toolbar;
+import com.google.android.material.appbar.AppBarLayout;
+import androidx.core.content.ContextCompat;
+import androidx.appcompat.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.Toast;
 
 
+import dev.dworks.apps.anexplorer.common.ActionBarActivity;
 import dev.dworks.apps.anexplorer.misc.SystemBarTintManager;
 import dev.dworks.apps.anexplorer.misc.Utils;
 import dev.dworks.apps.anexplorer.setting.SettingsActivity;
@@ -77,7 +77,7 @@ public class PurchaseActivity extends ActionBarActivity {
                     }
                 } else {
                     if(DocumentsApplication.isPurchased()){
-                        Utils.showSnackBar(PurchaseActivity.this, R.string.thank_you);
+                        Utils.showSnackBar(PurchaseActivity.this, getString(R.string.thank_you));
                     } else {
                         DocumentsApplication.getInstance().purchase(PurchaseActivity.this, DocumentsApplication.getPurchaseId());
                     }
@@ -92,7 +92,7 @@ public class PurchaseActivity extends ActionBarActivity {
     }
 
     private void restorePurchase() {
-        Utils.showSnackBar(this, R.string.restoring_purchase);
+        Utils.showSnackBar(this, getString(R.string.restoring_purchase));
         Needle.onBackgroundThread().execute(new UiRelatedTask<Boolean>(){
             @Override
             protected Boolean doWork() {
@@ -110,9 +110,9 @@ public class PurchaseActivity extends ActionBarActivity {
 
     public void onPurchaseRestored(){
         if (DocumentsApplication.isPurchased()) {
-            Utils.showSnackBar(this, R.string.restored_previous_purchase_please_restart);
+            Utils.showSnackBar(this, getString(R.string.restored_previous_purchase_please_restart));
         } else {
-            Utils.showSnackBar(this, R.string.could_not_restore_purchase);
+            Utils.showSnackBar(this, getString(R.string.could_not_restore_purchase));
         }
     }
 

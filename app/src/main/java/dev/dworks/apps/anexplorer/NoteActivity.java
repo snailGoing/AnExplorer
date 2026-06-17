@@ -21,10 +21,10 @@ import android.content.ContentResolver;
 import android.content.DialogInterface;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.design.widget.Snackbar;
-import android.support.v4.content.ContextCompat;
+import com.google.android.material.snackbar.Snackbar;
+import androidx.core.content.ContextCompat;
 import android.support.provider.DocumentFile;
-import android.support.v7.app.AlertDialog;
+import androidx.appcompat.app.AlertDialog;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -47,6 +47,8 @@ import java.io.OutputStream;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import dev.dworks.apps.anexplorer.common.ActionBarActivity;
+import dev.dworks.apps.anexplorer.common.DialogBuilder;
 import dev.dworks.apps.anexplorer.misc.AnalyticsManager;
 import dev.dworks.apps.anexplorer.misc.AsyncTask;
 import dev.dworks.apps.anexplorer.misc.ContentProviderClientCompat;
@@ -112,22 +114,20 @@ public class NoteActivity extends ActionBarActivity implements TextWatcher {
 
     private void checkUnsavedChanges() {
         if (mOriginal != null && !mOriginal.equals(mInput.getText().toString())) {
-            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            DialogBuilder builder = new DialogBuilder(this);
             builder.setTitle(R.string.unsaved_changes)
                     .setMessage(R.string.unsaved_changes_desc)
                     .setCancelable(false)
                     .setPositiveButton(R.string.save, new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int did) {
-                            dialog.dismiss();
                             save(true);
                         }
                     }).setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int did) {
-                            dialog.dismiss();
                             finish();
                         }
                     });
-            DialogFragment.showThemedDialog(builder);
+            builder.showDialog();
 
         } else {
             finish();
